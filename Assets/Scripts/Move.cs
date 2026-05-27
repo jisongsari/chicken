@@ -9,20 +9,20 @@ public class Move : MonoBehaviour
     {
         Vector2 input = Vector2.zero;
 
-        if (Keyboard.current.leftArrowKey.isPressed)
+        if (Keyboard.current.leftArrowKey.isPressed||Keyboard.current.aKey.isPressed)
         {
             input.x = -1f;
         }
-        else if (Keyboard.current.rightArrowKey.isPressed)
+        else if (Keyboard.current.rightArrowKey.isPressed||Keyboard.current.dKey.isPressed)
         {
             input.x = 1f;
         }
 
-        if (Keyboard.current.downArrowKey.isPressed)
+        if (Keyboard.current.downArrowKey.isPressed|| Keyboard.current.sKey.isPressed)
         {
             input.y = -1f;
         }
-        else if (Keyboard.current.upArrowKey.isPressed)
+        else if (Keyboard.current.upArrowKey.isPressed || Keyboard.current.wKey.isPressed)
         {
             input.y = 1f;
         }
