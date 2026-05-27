@@ -4,6 +4,8 @@ using UnityEngine.InputSystem;
 public class Move : MonoBehaviour
 {
     public float moveSpeed = 5f;
+    public float minY = -4.5f;
+    public float maxY = 4.5f;
     public Camera targetCamera;
 
     void Start()
@@ -37,7 +39,9 @@ public class Move : MonoBehaviour
         }
 
         Vector3 direction = new Vector3(input.x, input.y, 0f).normalized;
-        transform.position += direction * moveSpeed * Time.deltaTime;
+        Vector3 nextPosition = transform.position + direction * moveSpeed * Time.deltaTime;
+        nextPosition.y = Mathf.Clamp(nextPosition.y, minY, maxY);
+        transform.position = nextPosition;
     }
 
     void LateUpdate()
@@ -49,7 +53,6 @@ public class Move : MonoBehaviour
 
         Vector3 cameraPosition = targetCamera.transform.position;
         cameraPosition.x = transform.position.x;
-        cameraPosition.y = transform.position.y;
         targetCamera.transform.position = cameraPosition;
     }
 }
