@@ -8,7 +8,7 @@ public class Move : MonoBehaviour
     void Update()
     {
         Vector2 input = Vector2.zero;
-
+        // 안!지!호! 입니다!
         if (Keyboard.current.leftArrowKey.isPressed||Keyboard.current.aKey.isPressed)
         {
             input.x = -1f;
