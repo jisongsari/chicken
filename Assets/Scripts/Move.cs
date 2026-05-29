@@ -8,6 +8,8 @@ public class Move : MonoBehaviour
     public float maxY = 4.5f;
     public Camera targetCamera;
     public SpriteRenderer mapRenderer;
+    public GameObject bulletPrefab;
+    public Transform bulletSpawnPoint;
 
     private Renderer playerRenderer;
 
@@ -24,22 +26,34 @@ public class Move : MonoBehaviour
 
     void Update()
     {
+        Keyboard keyboard = Keyboard.current;
+
+        if (keyboard == null)
+        {
+            return;
+        }
+
+        if (keyboard.spaceKey.wasPressedThisFrame)
+        {
+            ShootBullet();
+        }
+
         Vector2 input = Vector2.zero;
         // 안!지!호! 입니다!
-        if (Keyboard.current.leftArrowKey.isPressed||Keyboard.current.aKey.isPressed)
+        if (keyboard.leftArrowKey.isPressed||keyboard.aKey.isPressed)
         {
             input.x = -1f;
         }
-        else if (Keyboard.current.rightArrowKey.isPressed||Keyboard.current.dKey.isPressed)
+        else if (keyboard.rightArrowKey.isPressed||keyboard.dKey.isPressed)
         {
             input.x = 1f;
         }
 
-        if (Keyboard.current.downArrowKey.isPressed|| Keyboard.current.sKey.isPressed)
+        if (keyboard.downArrowKey.isPressed|| keyboard.sKey.isPressed)
         {
             input.y = -1f;
         }
-        else if (Keyboard.current.upArrowKey.isPressed || Keyboard.current.wKey.isPressed)
+        else if (keyboard.upArrowKey.isPressed || keyboard.wKey.isPressed)
         {
             input.y = 1f;
         }
@@ -48,6 +62,23 @@ public class Move : MonoBehaviour
         Vector3 nextPosition = transform.position + direction * moveSpeed * Time.deltaTime;
         ClampPlayerPosition(ref nextPosition);
         transform.position = nextPosition;
+    }
+
+    void ShootBullet()
+    {
+        if (bulletPrefab == null)
+        {
+            return;
+        }
+
+        Vector3 spawnPosition = transform.position;
+
+        if (bulletSpawnPoint != null)
+        {
+            spawnPosition = bulletSpawnPoint.position;
+        }
+
+        Instantiate(bulletPrefab, spawnPosition, Quaternion.identity);
     }
 
     void LateUpdate()
