@@ -7,6 +7,7 @@ public class EnemySpawner : MonoBehaviour
     public SpriteRenderer mapRenderer;
     public float spawnInterval = 1f;
     public float horizontalCameraMultiplier = 2f;
+    public Transform targetYudam; 
 
     private float spawnTimer;
 
@@ -39,7 +40,12 @@ public class EnemySpawner : MonoBehaviour
     void SpawnEnemy()
     {
         Vector3 spawnPosition = GetRandomSpawnPosition();
-        Instantiate(enemyPrefab, spawnPosition, Quaternion.identity);
+        GameObject spawnedEnemy = Instantiate(enemyPrefab, spawnPosition, Quaternion.identity);
+        Enemy enemyScript = spawnedEnemy.GetComponent<Enemy>();
+        if (enemyScript != null && targetYudam != null)
+        {
+            enemyScript.yudam = targetYudam;
+        }
     }
 
     Vector3 GetRandomSpawnPosition()

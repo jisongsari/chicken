@@ -106,6 +106,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f98ec1670ff6f2b44bf6fa8ad1fccd0f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::enemy
+  yudam: {fileID: 5792068588533046008, guid: 8c95a6cba42797742ae6ff3b25cb5545, type: 3}
+  moveSpeed: 5
 --- !u!58 &-7588638212129956990
 CircleCollider2D:
   m_ObjectHideFlags: 0

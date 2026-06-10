@@ -264,6 +264,7 @@ MonoBehaviour:
   mapRenderer: {fileID: 0}
   spawnInterval: 1
   horizontalCameraMultiplier: 2
+  targetYudam: {fileID: 321776964}
 --- !u!4 &722901482
 Transform:
   m_ObjectHideFlags: 0
@@ -383,6 +384,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f98ec1670ff6f2b44bf6fa8ad1fccd0f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+  yudam: {fileID: 0}
+  moveSpeed: 5
 --- !u!1 &1535899133
 GameObject:
   m_ObjectHideFlags: 0
