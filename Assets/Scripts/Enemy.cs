@@ -2,8 +2,11 @@ using UnityEngine;
 
 public class Enemy : MonoBehaviour
 {
-    public Transform yudam;
+    public GameObject yudam;
     public float moveSpeed = 5f;
+
+    private bool hitYudam;
+
     void OnTriggerEnter2D(Collider2D other)
     {
         Bullet bullet = other.GetComponent<Bullet>();
@@ -12,7 +15,10 @@ public class Enemy : MonoBehaviour
         {
             Destroy(bullet.gameObject);
             Destroy(gameObject);
+            return;
         }
+
+        HitYudam(other.gameObject);
     }
 
     void OnCollisionEnter2D(Collision2D collision)
@@ -23,15 +29,58 @@ public class Enemy : MonoBehaviour
         {
             Destroy(bullet.gameObject);
             Destroy(gameObject);
+            return;
         }
+
+        HitYudam(collision.gameObject);
     }
 
     void follow()
     {
-        transform.position = Vector3.MoveTowards(transform.position, yudam.position, moveSpeed * Time.deltaTime);
+        if (yudam == null)
+        {
+            return;
+        }
+
+        transform.position = Vector3.MoveTowards(transform.position, yudam.transform.position, moveSpeed * Time.deltaTime);
     }
     void Update()
     {
         follow();
+    }
+
+    void HitYudam(GameObject target)
+    {
+        if (hitYudam)
+        {
+            return;
+        }
+
+        bool isYudam = target == yudam;
+
+        if (!isYudam && yudam != null)
+        {
+            isYudam = target.transform.IsChildOf(yudam.transform);
+        }
+
+        Move yudamMove = target.GetComponentInParent<Move>();
+
+        if (!isYudam && yudamMove != null)
+        {
+            isYudam = yudam == null || yudamMove.gameObject == yudam;
+        }
+
+        if (!isYudam)
+        {
+            return;
+        }
+
+        if (yudamMove != null)
+        {
+            yudamMove.TakeDamage(1);
+        }
+
+        hitYudam = true;
+        Destroy(gameObject);
     }
 }

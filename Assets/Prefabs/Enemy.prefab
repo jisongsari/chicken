@@ -10,9 +10,9 @@ GameObject:
   m_Component:
   - component: {fileID: 6180476429187701759}
   - component: {fileID: 7580866005151070578}
-  - component: {fileID: 2402297899002501237}
   - component: {fileID: -7588638212129956990}
   - component: {fileID: -346319442894394554}
+  - component: {fileID: -5202563056135261942}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Untagged
@@ -94,20 +94,6 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
---- !u!114 &2402297899002501237
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3345040742015864780}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f98ec1670ff6f2b44bf6fa8ad1fccd0f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::enemy
-  yudam: {fileID: 5792068588533046008, guid: 8c95a6cba42797742ae6ff3b25cb5545, type: 3}
-  moveSpeed: 5
 --- !u!58 &-7588638212129956990
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -156,7 +142,7 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 1
+  m_Mass: 150
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_GravityScale: 0
@@ -171,3 +157,17 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &-5202563056135261942
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3345040742015864780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f98ec1670ff6f2b44bf6fa8ad1fccd0f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Enemy
+  yudam: {fileID: 0}
+  moveSpeed: 5

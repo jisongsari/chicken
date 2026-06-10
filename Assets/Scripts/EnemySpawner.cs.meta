@@ -7,7 +7,6 @@ MonoImporter:
   - enemyPrefab: {fileID: 3345040742015864780, guid: aa4d80cccbee19142ab712e716bef168, type: 3}
   - targetCamera: {instanceID: 0}
   - mapRenderer: {instanceID: 0}
-  - targetYudam: {instanceID: 0}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
