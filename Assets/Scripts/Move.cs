@@ -1,36 +1,54 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class Move : MonoBehaviour
 {
     public float moveSpeed = 5f;
     public int maxHealth = 5;
+    public int maxChickenCount = 20;
+    public int maxChickenLegSkillCount = 2;
     public float minY = -4.5f;
     public float maxY = 4.5f;
     public Camera targetCamera;
     public SpriteRenderer mapRenderer;
     public GameObject bulletPrefab;
     public Transform bulletSpawnPoint;
-    public Transform chickenLeg;
+    public Transform chickenLeg1;
+    public Transform chickenLeg2;
     public float chickenLegOrbitRadius = 1.2f;
     public float chickenLegOrbitSpeed = 180f;
     public float chickenLegExpandTime = 0.25f;
     public float chickenLegFadeTime = 0.18f;
+    public Text healthText;
+    public Text chickenCountText;
 
     private Renderer playerRenderer;
     private int currentHealth;
-    private GUIStyle heartStyle;
-    private SpriteRenderer chickenLegRenderer;
-    private ChickenLegSkill chickenLegSkill;
-    private Vector3 chickenLegOriginalScale;
+    private int currentChickenCount;
+    private int currentChickenLegSkillCount;
+    private Transform[] chickenLegs;
+    private SpriteRenderer[] chickenLegRenderers;
+    private ChickenLegSkill[] chickenLegSkills;
+    private Vector3[] chickenLegOriginalScales;
+    private bool[] chickenLegUsed;
     private float chickenLegOrbitAngle;
     private bool isChickenLegSkillActive;
+    private int activeChickenLegIndex;
     private float chickenLegSkillTimer;
     private float chickenLegTargetScale;
+    private bool gameActive;
+
+    public void SetGameActive(bool active)
+    {
+        gameActive = active;
+    }
 
     void Start()
     {
         currentHealth = maxHealth;
+        currentChickenCount = maxChickenCount;
+        currentChickenLegSkillCount = maxChickenLegSkillCount;
 
         if (targetCamera == null)
         {
@@ -39,11 +57,18 @@ public class Move : MonoBehaviour
 
         playerRenderer = GetComponent<Renderer>();
         SetupChickenLeg();
+        UpdateHealthUI();
+        UpdateChickenCountUI();
         FitCameraHeightToMap();
     }
 
     void Update()
     {
+        if (!gameActive)
+        {
+            return;
+        }
+
         Keyboard keyboard = Keyboard.current;
 
         if (keyboard == null)
@@ -56,7 +81,7 @@ public class Move : MonoBehaviour
             ShootBullet();
         }
 
-        if ((keyboard.leftShiftKey.wasPressedThisFrame || keyboard.rightShiftKey.wasPressedThisFrame) && chickenLeg != null)
+        if (keyboard.leftShiftKey.wasPressedThisFrame || keyboard.rightShiftKey.wasPressedThisFrame)
         {
             StartChickenLegSkill();
         }
@@ -91,7 +116,7 @@ public class Move : MonoBehaviour
 
     void ShootBullet()
     {
-        if (bulletPrefab == null)
+        if (currentChickenCount <= 0)
         {
             return;
         }
@@ -104,34 +129,36 @@ public class Move : MonoBehaviour
         }
 
         Instantiate(bulletPrefab, spawnPosition, Quaternion.identity);
+        currentChickenCount--;
+        UpdateChickenCountUI();
     }
 
     public void TakeDamage(int damage)
     {
         currentHealth = Mathf.Max(currentHealth - damage, 0);
+        UpdateHealthUI();
     }
 
     void SetupChickenLeg()
     {
-        if (chickenLeg == null)
-        {
-            return;
-        }
+        chickenLegs = new Transform[] { chickenLeg1, chickenLeg2 };
+        chickenLegRenderers = new SpriteRenderer[chickenLegs.Length];
+        chickenLegSkills = new ChickenLegSkill[chickenLegs.Length];
+        chickenLegOriginalScales = new Vector3[chickenLegs.Length];
+        chickenLegUsed = new bool[chickenLegs.Length];
 
-        chickenLegOriginalScale = chickenLeg.localScale;
-        chickenLegRenderer = chickenLeg.GetComponentInChildren<SpriteRenderer>();
-        chickenLegSkill = chickenLeg.GetComponent<ChickenLegSkill>();
-        chickenLegSkill.SetCanDestroyEnemies(false);
-        SetChickenLegAlpha(1f);
+        for (int i = 0; i < chickenLegs.Length; i++)
+        {
+            chickenLegOriginalScales[i] = chickenLegs[i].localScale;
+            chickenLegRenderers[i] = chickenLegs[i].GetComponentInChildren<SpriteRenderer>();
+            chickenLegSkills[i] = chickenLegs[i].GetComponent<ChickenLegSkill>();
+            chickenLegSkills[i].SetCanDestroyEnemies(false);
+            SetChickenLegAlpha(i, 1f);
+        }
     }
 
     void UpdateChickenLeg()
     {
-        if (chickenLeg == null)
-        {
-            return;
-        }
-
         if (isChickenLegSkillActive)
         {
             UpdateChickenLegSkill();
@@ -139,30 +166,37 @@ public class Move : MonoBehaviour
         }
 
         chickenLegOrbitAngle += chickenLegOrbitSpeed * Time.deltaTime;
-        float angleInRadians = chickenLegOrbitAngle * Mathf.Deg2Rad;
-        Vector3 offset = new Vector3(Mathf.Cos(angleInRadians), Mathf.Sin(angleInRadians), 0f) * chickenLegOrbitRadius;
-        chickenLeg.position = transform.position + offset;
-        chickenLeg.localScale = chickenLegOriginalScale;
-        SetChickenLegAlpha(1f);
+
+        for (int i = 0; i < chickenLegs.Length; i++)
+        {
+            if (chickenLegUsed[i])
+            {
+                continue;
+            }
+
+            float phase = i * 180f;
+            float angleInRadians = (chickenLegOrbitAngle + phase) * Mathf.Deg2Rad;
+            Vector3 offset = new Vector3(Mathf.Cos(angleInRadians), Mathf.Sin(angleInRadians), 0f) * chickenLegOrbitRadius;
+            chickenLegs[i].position = transform.position + offset;
+            chickenLegs[i].localScale = chickenLegOriginalScales[i];
+            SetChickenLegAlpha(i, 1f);
+        }
     }
 
     void StartChickenLegSkill()
     {
-        if (isChickenLegSkillActive || targetCamera == null || !targetCamera.orthographic)
+        if (isChickenLegSkillActive || currentChickenLegSkillCount <= 0 || targetCamera == null || !targetCamera.orthographic)
         {
             return;
         }
 
+        activeChickenLegIndex = maxChickenLegSkillCount - currentChickenLegSkillCount;
+        currentChickenLegSkillCount--;
         isChickenLegSkillActive = true;
         chickenLegSkillTimer = 0f;
         chickenLegTargetScale = GetChickenLegScreenFillScale();
-
-        if (chickenLegSkill != null)
-        {
-            chickenLegSkill.SetCanDestroyEnemies(true);
-        }
-
-        SetChickenLegAlpha(1f);
+        chickenLegSkills[activeChickenLegIndex].SetCanDestroyEnemies(true);
+        SetChickenLegAlpha(activeChickenLegIndex, 1f);
         DestroyEnemiesInCamera();
     }
 
@@ -171,7 +205,8 @@ public class Move : MonoBehaviour
         chickenLegSkillTimer += Time.deltaTime;
 
         Vector3 cameraPosition = targetCamera.transform.position;
-        chickenLeg.position = new Vector3(cameraPosition.x, cameraPosition.y, chickenLeg.position.z);
+        Transform activeChickenLeg = chickenLegs[activeChickenLegIndex];
+        activeChickenLeg.position = new Vector3(cameraPosition.x, cameraPosition.y, activeChickenLeg.position.z);
 
         float expandTime = Mathf.Max(chickenLegExpandTime, 0.01f);
         float fadeTime = Mathf.Max(chickenLegFadeTime, 0.01f);
@@ -180,13 +215,13 @@ public class Move : MonoBehaviour
         {
             float progress = chickenLegSkillTimer / expandTime;
             float easedProgress = 1f - Mathf.Pow(1f - progress, 3f);
-            chickenLeg.localScale = chickenLegOriginalScale * Mathf.Lerp(1f, chickenLegTargetScale, easedProgress);
+            activeChickenLeg.localScale = chickenLegOriginalScales[activeChickenLegIndex] * Mathf.Lerp(1f, chickenLegTargetScale, easedProgress);
             DestroyEnemiesInCamera();
             return;
         }
 
         float fadeProgress = (chickenLegSkillTimer - expandTime) / fadeTime;
-        SetChickenLegAlpha(1f - fadeProgress);
+        SetChickenLegAlpha(activeChickenLegIndex, 1f - fadeProgress);
 
         if (fadeProgress >= 1f)
         {
@@ -197,14 +232,10 @@ public class Move : MonoBehaviour
     void EndChickenLegSkill()
     {
         isChickenLegSkillActive = false;
-        chickenLeg.localScale = chickenLegOriginalScale;
-
-        if (chickenLegSkill != null)
-        {
-            chickenLegSkill.SetCanDestroyEnemies(false);
-        }
-
-        SetChickenLegAlpha(1f);
+        chickenLegUsed[activeChickenLegIndex] = true;
+        chickenLegs[activeChickenLegIndex].localScale = chickenLegOriginalScales[activeChickenLegIndex];
+        chickenLegSkills[activeChickenLegIndex].SetCanDestroyEnemies(false);
+        SetChickenLegAlpha(activeChickenLegIndex, 0f);
         UpdateChickenLeg();
     }
 
@@ -213,19 +244,9 @@ public class Move : MonoBehaviour
         float cameraHeight = targetCamera.orthographicSize * 2f;
         float cameraWidth = cameraHeight * targetCamera.aspect;
 
-        if (chickenLegRenderer == null)
-        {
-            return Mathf.Max(cameraWidth, cameraHeight);
-        }
-
-        Bounds bounds = chickenLegRenderer.bounds;
+        Bounds bounds = chickenLegRenderers[activeChickenLegIndex].bounds;
         float currentWidth = bounds.size.x;
         float currentHeight = bounds.size.y;
-
-        if (currentWidth <= 0f || currentHeight <= 0f)
-        {
-            return Mathf.Max(cameraWidth, cameraHeight);
-        }
 
         return Mathf.Max(cameraWidth / currentWidth, cameraHeight / currentHeight) * 1.2f;
     }
@@ -253,27 +274,15 @@ public class Move : MonoBehaviour
             && viewportPosition.y <= 1f;
     }
 
-    void SetChickenLegAlpha(float alpha)
+    void SetChickenLegAlpha(int index, float alpha)
     {
-        if (chickenLegRenderer == null)
-        {
-            return;
-        }
-
-        Color color = chickenLegRenderer.color;
+        Color color = chickenLegRenderers[index].color;
         color.a = Mathf.Clamp01(alpha);
-        chickenLegRenderer.color = color;
+        chickenLegRenderers[index].color = color;
     }
 
-    void OnGUI()
+    void UpdateHealthUI()
     {
-        if (heartStyle == null)
-        {
-            heartStyle = new GUIStyle(GUI.skin.label);
-            heartStyle.fontSize = 56;
-            heartStyle.normal.textColor = Color.red;
-        }
-
         string hearts = "";
 
         for (int i = 0; i < currentHealth; i++)
@@ -281,7 +290,12 @@ public class Move : MonoBehaviour
             hearts += "♥";
         }
 
-        GUI.Label(new Rect(20f, 12f, 420f, 80f), hearts, heartStyle);
+        healthText.text = hearts;
+    }
+
+    void UpdateChickenCountUI()
+    {
+        chickenCountText.text = "남은 치킨 : " + currentChickenCount.ToString();
     }
 
     void LateUpdate()
