@@ -37,12 +37,6 @@ public class Move : MonoBehaviour
     private int activeChickenLegIndex;
     private float chickenLegSkillTimer;
     private float chickenLegTargetScale;
-    private bool gameActive;
-
-    public void SetGameActive(bool active)
-    {
-        gameActive = active;
-    }
 
     void Start()
     {
@@ -64,10 +58,6 @@ public class Move : MonoBehaviour
 
     void Update()
     {
-        if (!gameActive)
-        {
-            return;
-        }
 
         Keyboard keyboard = Keyboard.current;
 
