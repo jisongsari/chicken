@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class Move : MonoBehaviour
@@ -22,8 +23,12 @@ public class Move : MonoBehaviour
     public float chickenLegFadeTime = 0.18f;
     public Text healthText;
     public Text chickenCountText;
+    public Text timeText;
+    public float timeLimit = 90f;
+    public GameObject destination;
 
     private Renderer playerRenderer;
+    private float remainingTime;
     private int currentHealth;
     private int currentChickenCount;
     private int currentChickenLegSkillCount;
@@ -53,11 +58,25 @@ public class Move : MonoBehaviour
         SetupChickenLeg();
         UpdateHealthUI();
         UpdateChickenCountUI();
+        remainingTime = timeLimit;
+        UpdateTimeUI();
         FitCameraHeightToMap();
     }
 
     void Update()
     {
+
+        remainingTime -= Time.deltaTime;
+
+        if (remainingTime <= 0f)
+        {
+            remainingTime = 0f;
+            UpdateTimeUI();
+            OnFailure();
+            return;
+        }
+
+        UpdateTimeUI();
 
         Keyboard keyboard = Keyboard.current;
 
@@ -104,6 +123,34 @@ public class Move : MonoBehaviour
         UpdateChickenLeg();
     }
 
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        TryLoadStartScene(other.gameObject);
+    }
+
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        TryLoadStartScene(collision.gameObject);
+    }
+
+    void TryLoadStartScene(GameObject other)
+    {
+        if (other == destination || other.transform.IsChildOf(destination.transform))
+        {
+            OnGoalReached();
+        }
+    }
+
+    void OnGoalReached()
+    {
+        SceneManager.LoadScene("GameStart");
+    }
+
+    void OnFailure()
+    {
+        SceneManager.LoadScene("GameStart");
+    }
+
     void ShootBullet()
     {
         if (currentChickenCount <= 0)
@@ -127,6 +174,11 @@ public class Move : MonoBehaviour
     {
         currentHealth = Mathf.Max(currentHealth - damage, 0);
         UpdateHealthUI();
+
+        if (currentHealth == 0)
+        {
+            OnFailure();
+        }
     }
 
     void SetupChickenLeg()
@@ -286,6 +338,11 @@ public class Move : MonoBehaviour
     void UpdateChickenCountUI()
     {
         chickenCountText.text = "남은 치킨 : " + currentChickenCount.ToString();
+    }
+
+    void UpdateTimeUI()
+    {
+        timeText.text = "남은 시간 : " + remainingTime.ToString("F1") + "s";
     }
 
     void LateUpdate()
