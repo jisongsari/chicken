@@ -21,6 +21,7 @@ public class Move : MonoBehaviour
     public float chickenLegOrbitSpeed = 180f;
     public float chickenLegExpandTime = 0.25f;
     public float chickenLegFadeTime = 0.18f;
+    public float chickenLegScaleFactor = 1.2f;
     public Text healthText;
     public Text chickenCountText;
     public Text timeText;
@@ -290,7 +291,7 @@ public class Move : MonoBehaviour
         float currentWidth = bounds.size.x;
         float currentHeight = bounds.size.y;
 
-        return Mathf.Max(cameraWidth / currentWidth, cameraHeight / currentHeight) * 1.2f;
+        return Mathf.Max(cameraWidth / currentWidth, cameraHeight / currentHeight) * chickenLegScaleFactor;
     }
 
     void DestroyEnemiesInCamera()
