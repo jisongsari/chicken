@@ -1,14 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 public class Move : MonoBehaviour
 {
     public float moveSpeed = 5f;
-    public int maxHealth = 5;
-    public int maxChickenCount = 20;
-    public int maxChickenLegSkillCount = 2;
     public float minY = -4.5f;
     public float maxY = 4.5f;
     public Camera targetCamera;
@@ -22,17 +17,9 @@ public class Move : MonoBehaviour
     public float chickenLegExpandTime = 0.25f;
     public float chickenLegFadeTime = 0.18f;
     public float chickenLegScaleFactor = 1.2f;
-    public Text healthText;
-    public Text chickenCountText;
-    public Text timeText;
-    public float timeLimit = 90f;
     public GameObject destination;
 
     private Renderer playerRenderer;
-    private float remainingTime;
-    private int currentHealth;
-    private int currentChickenCount;
-    private int currentChickenLegSkillCount;
     private Transform[] chickenLegs;
     private SpriteRenderer[] chickenLegRenderers;
     private ChickenLegSkill[] chickenLegSkills;
@@ -46,75 +33,32 @@ public class Move : MonoBehaviour
 
     void Start()
     {
-        currentHealth = maxHealth;
-        currentChickenCount = maxChickenCount;
-        currentChickenLegSkillCount = maxChickenLegSkillCount;
-
         if (targetCamera == null)
-        {
             targetCamera = Camera.main;
-        }
 
         playerRenderer = GetComponent<Renderer>();
-        SetupChickenLeg();
-        UpdateHealthUI();
-        UpdateChickenCountUI();
-        remainingTime = timeLimit;
-        UpdateTimeUI();
+        SetupChickenLegs();
         FitCameraHeightToMap();
     }
 
     void Update()
     {
-
-        remainingTime -= Time.deltaTime;
-
-        if (remainingTime <= 0f)
-        {
-            remainingTime = 0f;
-            UpdateTimeUI();
-            OnFailure();
-            return;
-        }
-
-        UpdateTimeUI();
-
         Keyboard keyboard = Keyboard.current;
-
-        if (keyboard == null)
-        {
-            return;
-        }
+        if (keyboard == null) return;
 
         if (keyboard.spaceKey.wasPressedThisFrame)
-        {
             ShootBullet();
-        }
 
         if (keyboard.leftShiftKey.wasPressedThisFrame || keyboard.rightShiftKey.wasPressedThisFrame)
-        {
             StartChickenLegSkill();
-        }
 
         Vector2 input = Vector2.zero;
         // 안!지!호! 입니다!
-        if (keyboard.leftArrowKey.isPressed||keyboard.aKey.isPressed)
-        {
-            input.x = -1f;
-        }
-        else if (keyboard.rightArrowKey.isPressed||keyboard.dKey.isPressed)
-        {
-            input.x = 1f;
-        }
+        if (keyboard.leftArrowKey.isPressed || keyboard.aKey.isPressed) input.x = -1f;
+        else if (keyboard.rightArrowKey.isPressed || keyboard.dKey.isPressed) input.x = 1f;
 
-        if (keyboard.downArrowKey.isPressed|| keyboard.sKey.isPressed)
-        {
-            input.y = -1f;
-        }
-        else if (keyboard.upArrowKey.isPressed || keyboard.wKey.isPressed)
-        {
-            input.y = 1f;
-        }
+        if (keyboard.downArrowKey.isPressed || keyboard.sKey.isPressed) input.y = -1f;
+        else if (keyboard.upArrowKey.isPressed || keyboard.wKey.isPressed) input.y = 1f;
 
         Vector3 direction = new Vector3(input.x, input.y, 0f).normalized;
         Vector3 nextPosition = transform.position + direction * moveSpeed * Time.deltaTime;
@@ -126,71 +70,43 @@ public class Move : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        TryLoadStartScene(other.gameObject);
+        TryReachGoal(other.gameObject);
     }
 
     void OnCollisionEnter2D(Collision2D collision)
     {
-        TryLoadStartScene(collision.gameObject);
+        TryReachGoal(collision.gameObject);
     }
 
-    void TryLoadStartScene(GameObject other)
+    void TryReachGoal(GameObject other)
     {
         if (other == destination || other.transform.IsChildOf(destination.transform))
-        {
-            OnGoalReached();
-        }
-    }
-
-    void OnGoalReached()
-    {
-        SceneManager.LoadScene("GameStart");
-    }
-
-    void OnFailure()
-    {
-        SceneManager.LoadScene("GameStart");
-    }
-
-    void ShootBullet()
-    {
-        if (currentChickenCount <= 0)
-        {
-            return;
-        }
-
-        Vector3 spawnPosition = transform.position;
-
-        if (bulletSpawnPoint != null)
-        {
-            spawnPosition = bulletSpawnPoint.position;
-        }
-
-        Instantiate(bulletPrefab, spawnPosition, Quaternion.identity);
-        currentChickenCount--;
-        UpdateChickenCountUI();
+            GameManager.Instance.OnGoalReached();
     }
 
     public void TakeDamage(int damage)
     {
-        currentHealth = Mathf.Max(currentHealth - damage, 0);
-        UpdateHealthUI();
-
-        if (currentHealth == 0)
-        {
-            OnFailure();
-        }
+        GameManager.Instance.TakeDamage(damage);
     }
 
-    void SetupChickenLeg()
+    void ShootBullet()
+    {
+        if (!GameManager.Instance.TryShoot()) return;
+
+        Vector3 spawnPosition = bulletSpawnPoint != null ? bulletSpawnPoint.position : transform.position;
+        Instantiate(bulletPrefab, spawnPosition, Quaternion.identity);
+    }
+
+    void SetupChickenLegs()
     {
         chickenLegs = new Transform[] { chickenLeg1, chickenLeg2 };
-        chickenLegRenderers = new SpriteRenderer[chickenLegs.Length];
-        chickenLegSkills = new ChickenLegSkill[chickenLegs.Length];
-        chickenLegOriginalScales = new Vector3[chickenLegs.Length];
-        chickenLegUsed = new bool[chickenLegs.Length];
+        int count = chickenLegs.Length;
+        chickenLegRenderers = new SpriteRenderer[count];
+        chickenLegSkills = new ChickenLegSkill[count];
+        chickenLegOriginalScales = new Vector3[count];
+        chickenLegUsed = new bool[count];
 
-        for (int i = 0; i < chickenLegs.Length; i++)
+        for (int i = 0; i < count; i++)
         {
             chickenLegOriginalScales[i] = chickenLegs[i].localScale;
             chickenLegRenderers[i] = chickenLegs[i].GetComponentInChildren<SpriteRenderer>();
@@ -212,10 +128,7 @@ public class Move : MonoBehaviour
 
         for (int i = 0; i < chickenLegs.Length; i++)
         {
-            if (chickenLegUsed[i])
-            {
-                continue;
-            }
+            if (chickenLegUsed[i]) continue;
 
             float phase = i * 180f;
             float angleInRadians = (chickenLegOrbitAngle + phase) * Mathf.Deg2Rad;
@@ -228,13 +141,12 @@ public class Move : MonoBehaviour
 
     void StartChickenLegSkill()
     {
-        if (isChickenLegSkillActive || currentChickenLegSkillCount <= 0 || targetCamera == null || !targetCamera.orthographic)
-        {
-            return;
-        }
+        if (isChickenLegSkillActive || targetCamera == null || !targetCamera.orthographic) return;
 
-        activeChickenLegIndex = maxChickenLegSkillCount - currentChickenLegSkillCount;
-        currentChickenLegSkillCount--;
+        int skillIndex = GameManager.Instance.TryUseChickenLegSkill();
+        if (skillIndex < 0) return;
+
+        activeChickenLegIndex = skillIndex;
         isChickenLegSkillActive = true;
         chickenLegSkillTimer = 0f;
         chickenLegTargetScale = GetChickenLegScreenFillScale();
@@ -267,9 +179,7 @@ public class Move : MonoBehaviour
         SetChickenLegAlpha(activeChickenLegIndex, 1f - fadeProgress);
 
         if (fadeProgress >= 1f)
-        {
             EndChickenLegSkill();
-        }
     }
 
     void EndChickenLegSkill()
@@ -288,22 +198,16 @@ public class Move : MonoBehaviour
         float cameraWidth = cameraHeight * targetCamera.aspect;
 
         Bounds bounds = chickenLegRenderers[activeChickenLegIndex].bounds;
-        float currentWidth = bounds.size.x;
-        float currentHeight = bounds.size.y;
-
-        return Mathf.Max(cameraWidth / currentWidth, cameraHeight / currentHeight) * chickenLegScaleFactor;
+        return Mathf.Max(cameraWidth / bounds.size.x, cameraHeight / bounds.size.y) * chickenLegScaleFactor;
     }
 
     void DestroyEnemiesInCamera()
     {
         Enemy[] enemies = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
-
         foreach (Enemy enemy in enemies)
         {
             if (IsInCamera(enemy.transform.position))
-            {
                 Destroy(enemy.gameObject);
-            }
         }
     }
 
@@ -311,10 +215,8 @@ public class Move : MonoBehaviour
     {
         Vector3 viewportPosition = targetCamera.WorldToViewportPoint(worldPosition);
         return viewportPosition.z > 0f
-            && viewportPosition.x >= 0f
-            && viewportPosition.x <= 1f
-            && viewportPosition.y >= 0f
-            && viewportPosition.y <= 1f;
+            && viewportPosition.x >= 0f && viewportPosition.x <= 1f
+            && viewportPosition.y >= 0f && viewportPosition.y <= 1f;
     }
 
     void SetChickenLegAlpha(int index, float alpha)
@@ -324,34 +226,9 @@ public class Move : MonoBehaviour
         chickenLegRenderers[index].color = color;
     }
 
-    void UpdateHealthUI()
-    {
-        string hearts = "";
-
-        for (int i = 0; i < currentHealth; i++)
-        {
-            hearts += "♥";
-        }
-
-        healthText.text = hearts;
-    }
-
-    void UpdateChickenCountUI()
-    {
-        chickenCountText.text = "남은 치킨 : " + currentChickenCount.ToString();
-    }
-
-    void UpdateTimeUI()
-    {
-        timeText.text = "남은 시간 : " + remainingTime.ToString("F1") + "s";
-    }
-
     void LateUpdate()
     {
-        if (targetCamera == null)
-        {
-            return;
-        }
+        if (targetCamera == null) return;
 
         Vector3 cameraPosition = targetCamera.transform.position;
         cameraPosition.x = transform.position.x;
@@ -362,11 +239,7 @@ public class Move : MonoBehaviour
 
     void FitCameraHeightToMap()
     {
-        if (targetCamera == null || mapRenderer == null || !targetCamera.orthographic)
-        {
-            return;
-        }
-
+        if (targetCamera == null || mapRenderer == null || !targetCamera.orthographic) return;
         targetCamera.orthographicSize = mapRenderer.bounds.size.y * 0.5f;
     }
 
@@ -374,18 +247,10 @@ public class Move : MonoBehaviour
     {
         position.y = Mathf.Clamp(position.y, minY, maxY);
 
-        if (mapRenderer == null)
-        {
-            return;
-        }
+        if (mapRenderer == null) return;
 
         Bounds mapBounds = mapRenderer.bounds;
-        float playerHalfWidth = 0f;
-
-        if (playerRenderer != null)
-        {
-            playerHalfWidth = playerRenderer.bounds.extents.x;
-        }
+        float playerHalfWidth = playerRenderer != null ? playerRenderer.bounds.extents.x : 0f;
 
         position.x = Mathf.Clamp(
             position.x,
@@ -396,10 +261,7 @@ public class Move : MonoBehaviour
 
     void ClampCameraPosition(ref Vector3 position)
     {
-        if (mapRenderer == null || targetCamera == null || !targetCamera.orthographic)
-        {
-            return;
-        }
+        if (mapRenderer == null || targetCamera == null || !targetCamera.orthographic) return;
 
         Bounds mapBounds = mapRenderer.bounds;
         float cameraHalfHeight = targetCamera.orthographicSize;

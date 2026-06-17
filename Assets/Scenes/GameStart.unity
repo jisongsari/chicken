@@ -464,6 +464,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e9c8731bd0136b049b27fe94b2d5598c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameStart
+  currentScoreText: {fileID: 94937932}
+  bestScoreText: {fileID: 111561110}
 --- !u!4 &1290403404
 Transform:
   m_ObjectHideFlags: 0
