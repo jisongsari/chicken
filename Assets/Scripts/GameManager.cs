@@ -97,6 +97,11 @@ public class GameManager : MonoBehaviour
         EndGame(true);
     }
 
+    public void GameOver()
+    {
+        EndGame(false);
+    }
+
     private void EndGame(bool success)
     {
         if (gameEnded) return;

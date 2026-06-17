@@ -19,7 +19,14 @@ public class Move : MonoBehaviour
     public float chickenLegScaleFactor = 1.2f;
     public GameObject destination;
 
+    [Header("Umbrella")]
+    public float umbrellaRadiusMultiplier = 2f;
+    public Color umbrellaColor = Color.cyan;
+    public float umbrellaLineWidth = 0.05f;
+
     private Renderer playerRenderer;
+    private Umbrella umbrella;
+    private Boss cachedBoss;
     private Transform[] chickenLegs;
     private SpriteRenderer[] chickenLegRenderers;
     private ChickenLegSkill[] chickenLegSkills;
@@ -38,7 +45,9 @@ public class Move : MonoBehaviour
 
         playerRenderer = GetComponent<Renderer>();
         SetupChickenLegs();
+        SetupUmbrella();
         FitCameraHeightToMap();
+        cachedBoss = FindAnyObjectByType<Boss>();
     }
 
     void Update()
@@ -51,6 +60,11 @@ public class Move : MonoBehaviour
 
         if (keyboard.leftShiftKey.wasPressedThisFrame || keyboard.rightShiftKey.wasPressedThisFrame)
             StartChickenLegSkill();
+
+        if (keyboard.commaKey.wasPressedThisFrame)
+            umbrella?.Open();
+        if (keyboard.periodKey.wasPressedThisFrame)
+            umbrella?.Close();
 
         Vector2 input = Vector2.zero;
         // 안!지!호! 입니다!
@@ -95,6 +109,19 @@ public class Move : MonoBehaviour
 
         Vector3 spawnPosition = bulletSpawnPoint != null ? bulletSpawnPoint.position : transform.position;
         Instantiate(bulletPrefab, spawnPosition, Quaternion.identity);
+    }
+
+    void SetupUmbrella()
+    {
+        GameObject umbrellaObj = new GameObject("Umbrella");
+        umbrellaObj.transform.SetParent(transform);
+        umbrellaObj.transform.localPosition = Vector3.zero;
+        umbrella = umbrellaObj.AddComponent<Umbrella>();
+        umbrella.color = umbrellaColor;
+        umbrella.lineWidth = umbrellaLineWidth;
+
+        float headRadius = playerRenderer != null ? playerRenderer.bounds.extents.x : 0.5f;
+        umbrella.Initialize(headRadius * umbrellaRadiusMultiplier);
     }
 
     void SetupChickenLegs()
@@ -234,6 +261,7 @@ public class Move : MonoBehaviour
         cameraPosition.x = transform.position.x;
         cameraPosition.y = transform.position.y;
         ClampCameraPosition(ref cameraPosition);
+        cameraPosition += Boss.CameraShakeOffset;
         targetCamera.transform.position = cameraPosition;
     }
 
@@ -252,11 +280,17 @@ public class Move : MonoBehaviour
         Bounds mapBounds = mapRenderer.bounds;
         float playerHalfWidth = playerRenderer != null ? playerRenderer.bounds.extents.x : 0f;
 
-        position.x = Mathf.Clamp(
-            position.x,
-            mapBounds.min.x + playerHalfWidth,
-            mapBounds.max.x - playerHalfWidth
-        );
+        float maxX = mapBounds.max.x - playerHalfWidth;
+
+        // 보스가 있으면 보스 왼쪽 경계로 X 제한
+        if (cachedBoss != null)
+        {
+            Renderer bossRenderer = cachedBoss.GetComponent<Renderer>();
+            float bossHalfWidth = bossRenderer != null ? bossRenderer.bounds.extents.x : 0.5f;
+            maxX = Mathf.Min(maxX, cachedBoss.transform.position.x - bossHalfWidth - playerHalfWidth);
+        }
+
+        position.x = Mathf.Clamp(position.x, mapBounds.min.x + playerHalfWidth, maxX);
     }
 
     void ClampCameraPosition(ref Vector3 position)

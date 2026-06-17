@@ -51,10 +51,10 @@ public class Enemy : MonoBehaviour
 
     void HitYudam(GameObject target)
     {
-        if (hitYudam)
-        {
-            return;
-        }
+        if (hitYudam) return;
+
+        // 양심우산은 유담의 일부로 인식하지 않음
+        if (target.GetComponent<Umbrella>() != null) return;
 
         bool isYudam = target == yudam;
 
